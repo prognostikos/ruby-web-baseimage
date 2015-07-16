@@ -10,6 +10,10 @@ minimal_apt_get_install() {
   apt-get install -y --no-install-recommends "$@"
 }
 
+[ -z $APP_USER ] && exit 1
+[ -z $APP_SRC_DIR ] && exit 1
+[ -z $BUNDLE_PATH ] && exit 1
+
 # add ppa for latest ruby
 echo deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu trusty main > /etc/apt/sources.list.d/brightbox.list
 
@@ -48,22 +52,22 @@ minimal_apt_get_install \
 # ensure we have en_US.UTF-8
 locale-gen en_US.UTF-8
 
-# create app user
-addgroup --gid 9999 app
-adduser --uid 9999 --gid 9999 --disabled-password --gecos "Application" app
-usermod -L app
-mkdir -p /home/app/.ssh
-chmod 700 /home/app/.ssh
-chown app:app /home/app/.ssh
+# create $APP_USER user
+addgroup --gid 9999 $APP_USER
+adduser --uid 9999 --gid 9999 --disabled-password --gecos "Application" $APP_USER
+usermod -L $APP_USER
+mkdir -p /home/$APP_USER/.ssh
+chmod 700 /home/$APP_USER/.ssh
+chown $APP_USER:$APP_USER /home/$APP_USER/.ssh
 
 # application code will live here
-mkdir /app
-chown app:app /app
-ln -s /home/app/app /app
+mkdir -p $APP_SRC_DIR
+chown $APP_USER:$APP_USER $APP_SRC_DIR
+cd /home/$APP_USER && ln -s $APP_SRC_DIR
 
 # application gems will live here
-mkdir /bundle
-chown app:app /bundle
+mkdir $BUNDLE_PATH
+chown $APP_USER:$APP_USER $BUNDLE_PATH
 
 # skip installing gem documentation
 echo 'gem: --no-rdoc --no-ri' >> "/etc/gemrc"
