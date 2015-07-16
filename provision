@@ -1,0 +1,85 @@
+#!/bin/bash -ex
+
+export LC_ALL=C
+export DEBIAN_FRONTEND=noninteractive
+
+minimal_apt_get_install() {
+  if [[ ! -e /var/lib/apt/lists/lock ]]; then
+    apt-get update
+  fi
+  apt-get install -y --no-install-recommends "$@"
+}
+
+# add ppa for latest ruby
+echo deb http://ppa.launchpad.net/brightbox/ruby-ng/ubuntu trusty main > /etc/apt/sources.list.d/brightbox.list
+
+# add ppa for stable nginx
+echo deb http://ppa.launchpad.net/nginx/stable/ubuntu trusty main > /etc/apt/sources.list.d/nginx.list
+
+# add keys for PPAs
+#
+# Brightbox
+# Nginx
+apt-key adv --keyserver keyserver.ubuntu.com --recv-keys \
+  C3173AA6 \
+  8B3981E7A6852F782CC4951600A6F0A3C300EE8C
+
+# add ppa for node (also runs apt-get update)
+curl --fail -ssL -o /tmp/setup-nodejs https://deb.nodesource.com/setup_0.12
+bash /tmp/setup-nodejs
+rm -f /tmp/setup-nodejs
+
+# install deps
+minimal_apt_get_install \
+  build-essential \
+  git \
+  libcurl4-openssl-dev \
+  libpq-dev \
+  libxml2-dev \
+  libxslt1-dev \
+  locales \
+  nginx \
+  nodejs \
+  ruby2.2 \
+  ruby2.2-dev \
+  zlib1g-dev \
+  #
+
+# ensure we have en_US.UTF-8
+locale-gen en_US.UTF-8
+
+# create app user
+addgroup --gid 9999 app
+adduser --uid 9999 --gid 9999 --disabled-password --gecos "Application" app
+usermod -L app
+mkdir -p /home/app/.ssh
+chmod 700 /home/app/.ssh
+chown app:app /home/app/.ssh
+
+# application code will live here
+mkdir /app
+chown app:app /app
+ln -s /home/app/app /app
+
+# application gems will live here
+mkdir /bundle
+chown app:app /bundle
+
+# skip installing gem documentation
+echo 'gem: --no-rdoc --no-ri' >> "/etc/gemrc"
+
+# bundler should be the only global gem
+gem install bundler
+
+# setup unattended upgrades to run automatically
+cp /build/config/apt_apt_conf_d_20auto-upgrades /etc/apt/apt.conf.d/20auto-upgrades
+
+# setup nginx
+rm /etc/nginx/sites-enabled/default
+cp /build/config/nginx.conf /etc/nginx/nginx.conf
+mkdir -p /etc/nginx/main.d
+cp /build/config/nginx_main_d_default.conf /etc/nginx/main.d/default.conf
+mkdir /etc/service/nginx
+cp /build/runit/nginx /etc/service/nginx/run
+mkdir /etc/service/nginx-log-forwarder
+cp /build/runit/nginx-log-forwarder /etc/service/nginx-log-forwarder/run
