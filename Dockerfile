@@ -4,7 +4,7 @@ MAINTAINER Matt Rohrer @prognostikos
 ENV BUNDLE_PATH /bundle
 
 ENV APP_USER app
-ENV APP_SRC_DIR app
+ENV APP_SRC_DIR /app
 
 ADD . /build
 RUN /build/provision && rm -rf /build
