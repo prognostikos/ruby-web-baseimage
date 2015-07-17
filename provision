@@ -34,7 +34,7 @@ bash /tmp/setup-nodejs
 rm -f /tmp/setup-nodejs
 
 # install deps
-minimal_apt_get_install \
+apt-get install -y --no-install-recommends \
   build-essential \
   git \
   libcurl4-openssl-dev \
@@ -47,7 +47,7 @@ minimal_apt_get_install \
   ruby2.2 \
   ruby2.2-dev \
   zlib1g-dev \
-  #
+  && apt-get clean -y && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # ensure we have en_US.UTF-8
 locale-gen en_US.UTF-8
